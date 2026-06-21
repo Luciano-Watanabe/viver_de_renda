@@ -1,0 +1,6 @@
+{
+  "name": "Viver de Renda",
+  "description": "Simulador e planejador financeiro focado em viver de rendimentos (dividendos de ações, FIIs e tesouro)",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

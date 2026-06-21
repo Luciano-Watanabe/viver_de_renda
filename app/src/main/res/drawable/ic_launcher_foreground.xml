@@ -1,0 +1,41 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Sprout stem -->
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M54,34 L54,26 L52,24 L52,34 Z" />
+
+    <!-- Left Leaf -->
+    <path
+        android:fillColor="#81C784"
+        android:pathData="M51,30 C42,22 41,12 50,11 C54,18 53,26 51,30 Z" />
+
+    <!-- Right Leaf -->
+    <path
+        android:fillColor="#388E3C"
+        android:pathData="M55,28 C64,21 68,14 62,10 C56,15 55,22 55,28 Z" />
+
+    <!-- Golden Coin Outer Shadow -->
+    <path
+        android:fillColor="#10000000"
+        android:pathData="M56,36 C45.5,36 37,44.5 37,55 C37,65.5 45.5,74 56,74 C66.5,74 75,65.5 75,55 C75,44.5 66.5,36 56,36 Z" />
+
+    <!-- Golden Coin Base -->
+    <path
+        android:fillColor="#FFD54F"
+        android:pathData="M54,34 C43,34 34,43 34,54 C34,65 43,74 54,74 C65,74 74,65 74,54 C74,43 65,34 54,34 Z" />
+
+    <!-- Golden Coin Rim -->
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M54,38 C45.2,38 38,45.2 38,54 C38,62.8 45.2,70 54,70 C62.8,70 70,62.8 70,54 C70,45.2 62.8,38 54,38 Z M54,72 C44,72 36,64 36,54 C36,44 44,36 54,36 C64,36 72,44 72,54 C72,64 64,72 54,72 Z" />
+
+    <!-- Embossed Dollar Sign ($) -->
+    <path
+        android:fillColor="#E65100"
+        android:pathData="M54,42 C51,42 49,44 49,46 C49,48 51,49 54,50 C57,51 59,52 59,55 C59,58 57,60 54,60 C51.5,60 50,59 49,57 L46,59 C48,62 51,63 53,63.5 L53,66 L55,66 L55,63.5 C58,63 61,61 61,58 C61,54 58,53 55,52 C52,51 51,50 51,48 C51,46.5 52.5,45 54,45 C56.5,45 58,46.5 58,48 L61,46 C60,43.5 57,42 55,42.2 L55,40 L53,40 L53,42 Z" />
+</vector>
