@@ -91,6 +91,13 @@ fun ViverMainScreen(
         0.0
     }
 
+    val currentWealth = settings.initialInvestment
+    val progressRatio = if (targetCapitalNeeded > 0) {
+        (currentWealth / targetCapitalNeeded).toFloat().coerceIn(0f, 1f)
+    } else {
+        1f
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
@@ -245,13 +252,6 @@ fun ViverMainScreen(
                     }
 
                     // Progress Metric to goal
-                    val currentWealth = settings.initialInvestment
-                    val progressRatio = if (targetCapitalNeeded > 0) {
-                        (currentWealth / targetCapitalNeeded).toFloat().coerceIn(0f, 1f)
-                    } else {
-                        1f
-                    }
-
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -1028,5 +1028,136 @@ fun ViverMainScreen(
                 viewModel.addPurchasedAsset(ticker, name, category, quantity, purchasePrice, annualYield)
             }
         )
+    }
+}
+
+@Composable
+fun PortfolioPieChart(purchasedAssets: List<PurchasedAsset>) {
+    val grouped = purchasedAssets.groupBy { it.category }
+    val categoryTotals = grouped.mapValues { entry -> entry.value.sumOf { it.quantity * it.purchasePrice } }
+    val totalValue = categoryTotals.values.sum()
+    
+    val categoryColors = mapOf(
+        "Ação" to Color(0xFF4CAF50),       // Green
+        "FII" to Color(0xFF2196F3),        // Blue
+        "Tesouro Direto" to Color(0xFF9C27B0) // Purple
+    )
+    
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Distribuição do Patrimônio",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(160.dp)) {
+            androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                var startAngle = -90f
+                val strokeWidth = 32.dp.toPx()
+                val radius = (size.minDimension - strokeWidth) / 2
+                
+                categoryTotals.forEach { (category, value) ->
+                    val sweepAngle = (value / totalValue).toFloat() * 360f
+                    val color = categoryColors[category] ?: Color.Gray
+                    
+                    drawArc(
+                        color = color,
+                        startAngle = startAngle,
+                        sweepAngle = sweepAngle,
+                        useCenter = false,
+                        topLeft = Offset(strokeWidth / 2, strokeWidth / 2),
+                        size = Size(radius * 2, radius * 2),
+                        style = Stroke(width = strokeWidth, cap = StrokeCap.Butt)
+                    )
+                    startAngle += sweepAngle
+                }
+            }
+            
+            Text(
+                text = "100%",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            categoryTotals.forEach { (category, value) ->
+                val percentage = (value / totalValue) * 100
+                val color = categoryColors[category] ?: Color.Gray
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(modifier = Modifier.size(12.dp).clip(RoundedCornerShape(6.dp)).background(color))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "$category (${String.format(Locale("pt", "BR"), "%.0f", percentage)}%)",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun WizardTutorial(step: Int, onNext: () -> Unit, onSkip: () -> Unit) {
+    val messages = listOf(
+        "👋 Bem-vindo ao Viver de Renda!\n\nComece adicionando o seu Custo de Vida na aba Contas Fixas.",
+        "⚙️ Na aba Simulador, defina o que você já tem guardado e o quanto consegue investir por mês.",
+        "💡 A aba Sugestões mostrará automaticamente uma lista de investimentos para você atingir a meta.",
+        "💰 Finalmente, cadastre os ativos que comprar na aba Carteira e veja o seu Patrimônio Real crescer!"
+    )
+
+    Dialog(
+        onDismissRequest = { onSkip() },
+        properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = false)
+    ) {
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(8.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "Passo ${step + 1} de 4",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+                
+                Text(
+                    text = messages[step],
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center
+                )
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    TextButton(onClick = onSkip) {
+                        Text("Pular", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Button(onClick = onNext) {
+                        Text(if (step == 3) "Começar" else "Avançar")
+                    }
+                }
+            }
+        }
     }
 }
