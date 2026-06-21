@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.components.*
 import com.example.ui.viewmodel.ViverViewModel
 import com.example.data.model.Asset
+import com.example.data.model.PurchasedAsset
 import com.example.data.model.AssetSuggestionEngine
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -1160,4 +1161,5 @@ fun WizardTutorial(step: Int, onNext: () -> Unit, onSkip: () -> Unit) {
             }
         }
     }
+}
 }
