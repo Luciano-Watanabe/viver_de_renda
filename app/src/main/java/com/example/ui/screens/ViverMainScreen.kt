@@ -45,6 +45,8 @@ import java.util.*
 @Composable
 fun ViverMainScreen(
     viewModel: ViverViewModel,
+    isDarkTheme: Boolean = false,
+    onThemeToggle: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val bills by viewModel.allBills.collectAsStateWithLifecycle()
@@ -54,7 +56,9 @@ fun ViverMainScreen(
     val timeline by viewModel.simulationTimeline.collectAsStateWithLifecycle()
     val monthsToFreedom by viewModel.monthsToFinancialFreedom.collectAsStateWithLifecycle()
     val purchasedAssets by viewModel.allPurchasedAssets.collectAsStateWithLifecycle()
+    val livePrices by viewModel.livePrices.collectAsStateWithLifecycle()
 
+    var showConfetti by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf(0) }
     var showAddDialog by remember { mutableStateOf(false) }
     var showAddAssetDialog by remember { mutableStateOf(false) }
@@ -138,6 +142,14 @@ fun ViverMainScreen(
                                 modifier = Modifier.padding(top = 2.dp, start = 44.dp)
                             )
                         }
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onThemeToggle) {
+                        Text(
+                            text = if (isDarkTheme) "☀️" else "🌙",
+                            fontSize = 20.sp
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -310,14 +322,21 @@ fun ViverMainScreen(
                     val multipleOf10 = (progressInt / 10) * 10
                     if (multipleOf10 >= 10 && multipleOf10 > settings.lastCelebratedProgress) {
                         viewModel.updateCelebratedProgress(multipleOf10)
+                        showConfetti = true
                         coroutineScope.launch {
                             snackbarHostState.showSnackbar(
                                 message = "🎉 Incrível! Seus rendimentos já cobrem $multipleOf10% das suas contas!",
                                 duration = SnackbarDuration.Short
                             )
+                            delay(3000)
+                            showConfetti = false
                         }
                     }
                 }
+            }
+
+            if (showConfetti) {
+                SimpleConfetti()
             }
 
             // --- NAVIGATION TABS ---
@@ -792,8 +811,8 @@ fun ViverMainScreen(
 
                     3 -> {
                         // --- TAB 4: MY PORTFOLIO & RETURNS ---
-                        val totalInvested = purchasedAssets.sumOf { it.quantity * it.purchasePrice }
-                        val totalMonthlyReturn = purchasedAssets.sumOf { (it.quantity * it.purchasePrice * it.annualYield) / 12.0 }
+                        val totalInvested = purchasedAssets.sumOf { it.quantity * (livePrices[it.ticker] ?: it.purchasePrice) }
+                        val totalMonthlyReturn = purchasedAssets.sumOf { (it.quantity * (livePrices[it.ticker] ?: it.purchasePrice) * it.annualYield) / 12.0 }
                         val pctCoverage = if (totalCosts > 0) (totalMonthlyReturn / totalCosts) * 100.0 else 100.0
 
                         LazyColumn(
@@ -880,7 +899,7 @@ fun ViverMainScreen(
                                         
                                         // Dynamic Pie Chart for Portfolio Balance
                                         if (purchasedAssets.isNotEmpty()) {
-                                            PortfolioPieChart(purchasedAssets = purchasedAssets)
+                                            PortfolioPieChart(purchasedAssets = purchasedAssets, livePrices = livePrices)
                                         }
 
                                         LinearProgressIndicator(
@@ -990,7 +1009,8 @@ fun ViverMainScreen(
                                 items(purchasedAssets, key = { it.id }) { asset ->
                                     PurchasedAssetItem(
                                         asset = asset,
-                                        onDelete = { viewModel.deletePurchasedAsset(asset) }
+                                        onDelete = { viewModel.deletePurchasedAsset(asset) },
+                                        livePrice = livePrices[asset.ticker]
                                     )
                                 }
                             }
@@ -1031,12 +1051,96 @@ fun ViverMainScreen(
             }
         )
     }
+
+    if (showNamePrompt) {
+        var tempName by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { /* force name entry */ },
+            title = { Text("Bem-vindo!", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Como quer ser chamado?")
+                    OutlinedTextField(
+                        value = tempName,
+                        onValueChange = { tempName = it },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val finalName = if (tempName.isNotBlank()) tempName else "Investidor"
+                    viewModel.updateUserName(finalName)
+                    showNamePrompt = false
+                    if (!settings.hasSeenTutorial && settings.initialInvestment == 0.0) {
+                        showWizard = true
+                    }
+                }) {
+                    Text("Começar")
+                }
+            }
+        )
+    }
+
+    if (showWizard) {
+        WizardTutorial(
+            step = wizardStep,
+            onNext = {
+                if (wizardStep < 3) wizardStep++
+                else {
+                    showWizard = false
+                    viewModel.completeTutorial()
+                }
+            },
+            onSkip = {
+                showWizard = false
+                viewModel.completeTutorial()
+            }
+        )
+    }
 }
 
 @Composable
-fun PortfolioPieChart(purchasedAssets: List<PurchasedAsset>) {
+fun SimpleConfetti() {
+    val emojis = listOf("🎉", "✨", "💰", "💸", "🚀")
+    Box(modifier = Modifier.fillMaxSize()) {
+        for (i in 0..20) {
+            val emoji = emojis.random()
+            val startX = (10..90).random().toFloat() / 100f
+            val delayMs = (0..500).random()
+            
+            var yOffset by remember { mutableStateOf(-100f) }
+            
+            LaunchedEffect(Unit) {
+                delay(delayMs.toLong())
+                androidx.compose.animation.core.animate(
+                    initialValue = -100f,
+                    targetValue = 2000f,
+                    animationSpec = androidx.compose.animation.core.tween(durationMillis = 2500, easing = androidx.compose.animation.core.LinearEasing)
+                ) { value, _ ->
+                    yOffset = value
+                }
+            }
+            
+            Text(
+                text = emoji,
+                fontSize = 24.sp,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .wrapContentSize(Alignment.TopStart)
+                    .offset(x = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp.dp * startX, y = yOffset.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun PortfolioPieChart(purchasedAssets: List<PurchasedAsset>, livePrices: Map<String, Double> = emptyMap()) {
     val grouped = purchasedAssets.groupBy { it.category }
-    val categoryTotals = grouped.mapValues { entry -> entry.value.sumOf { it.quantity * it.purchasePrice } }
+    val categoryTotals = grouped.mapValues { entry -> 
+        entry.value.sumOf { it.quantity * (livePrices[it.ticker] ?: it.purchasePrice) } 
+    }
     val totalValue = categoryTotals.values.sum()
     
     val categoryColors = mapOf(

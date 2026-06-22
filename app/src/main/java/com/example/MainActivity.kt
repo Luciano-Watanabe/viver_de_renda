@@ -25,14 +25,22 @@ class MainActivity : ComponentActivity() {
         val repository = ViverRepository(database.dao)
 
         setContent {
-            MyApplicationTheme {
+            var isDarkTheme by androidx.compose.runtime.remember { 
+                androidx.compose.runtime.mutableStateOf(androidx.compose.foundation.isSystemInDarkTheme()) 
+            }
+
+            MyApplicationTheme(darkTheme = isDarkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     val viewModel: ViverViewModel = viewModel(
                         factory = ViverViewModelFactory(repository)
                     )
-                    ViverMainScreen(viewModel = viewModel)
+                    ViverMainScreen(
+                        viewModel = viewModel,
+                        isDarkTheme = isDarkTheme,
+                        onThemeToggle = { isDarkTheme = !isDarkTheme }
+                    )
                 }
             }
         }

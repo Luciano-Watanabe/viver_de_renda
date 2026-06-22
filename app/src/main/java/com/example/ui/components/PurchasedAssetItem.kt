@@ -21,10 +21,13 @@ import java.util.*
 fun PurchasedAssetItem(
     asset: PurchasedAsset,
     onDelete: () -> Unit,
+    livePrice: Double? = null,
     modifier: Modifier = Modifier
 ) {
+    val currentPrice = livePrice ?: asset.purchasePrice
     val totalInvested = asset.quantity * asset.purchasePrice
-    val annualReturn = totalInvested * asset.annualYield
+    val currentTotalValue = asset.quantity * currentPrice
+    val annualReturn = currentTotalValue * asset.annualYield
     val monthlyReturn = annualReturn / 12.0
 
     val badgeColor = when (asset.category.uppercase()) {
@@ -119,17 +122,26 @@ fun PurchasedAssetItem(
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
+                    if (livePrice != null) {
+                        val pctDiff = ((livePrice / asset.purchasePrice) - 1.0) * 100.0
+                        Text(
+                            text = String.format(Locale("pt", "BR"), "Atual: R$ %,.2f (%.1f%%)", livePrice, pctDiff),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (pctDiff >= 0) Color(0xFF4CAF50) else MaterialTheme.colorScheme.error
+                        )
+                    }
                 }
 
                 // Total Invested
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = "Total Pago",
+                        text = "Valor Atual",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
                     Text(
-                        text = String.format(Locale("pt", "BR"), "R$ %,.2f", totalInvested),
+                        text = String.format(Locale("pt", "BR"), "R$ %,.2f", currentTotalValue),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface

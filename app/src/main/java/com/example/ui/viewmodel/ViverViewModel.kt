@@ -47,9 +47,55 @@ class ViverViewModel(private val repository: ViverRepository) : ViewModel() {
             initialValue = 0.0
         )
 
+    // Live Prices from Yahoo Finance (Map of Ticker -> Current Price)
+    private val _livePrices = MutableStateFlow<Map<String, Double>>(emptyMap())
+    val livePrices: StateFlow<Map<String, Double>> = _livePrices.asStateFlow()
+
     // Trigger for when live prices update
     private val _livePricesUpdated = MutableStateFlow(0)
     val livePricesUpdated: StateFlow<Int> = _livePricesUpdated
+
+    init {
+        viewModelScope.launch {
+            allPurchasedAssets.collect { assets ->
+                fetchLivePrices(assets)
+            }
+        }
+    }
+
+    private fun fetchLivePrices(assets: List<PurchasedAsset>) {
+        if (assets.isEmpty()) return
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val newPrices = mutableMapOf<String, Double>()
+            for (asset in assets) {
+                var symbol = asset.ticker.uppercase()
+                if (!symbol.endsWith(".SA") && !symbol.contains(".")) {
+                    symbol += ".SA"
+                }
+                try {
+                    val url = java.net.URL("https://query1.finance.yahoo.com/v8/finance/chart/$symbol?interval=1d")
+                    val connection = url.openConnection() as java.net.HttpURLConnection
+                    connection.requestMethod = "GET"
+                    connection.connectTimeout = 5000
+                    connection.readTimeout = 5000
+                    
+                    if (connection.responseCode == 200) {
+                        val response = connection.inputStream.bufferedReader().use { it.readText() }
+                        val json = org.json.JSONObject(response)
+                        val chart = json.getJSONObject("chart")
+                        val result = chart.getJSONArray("result").getJSONObject(0)
+                        val meta = result.getJSONObject("meta")
+                        val regularMarketPrice = meta.getDouble("regularMarketPrice")
+                        newPrices[asset.ticker] = regularMarketPrice
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            // Retain old prices if fetch failed, update with new ones
+            _livePrices.value = _livePrices.value + newPrices
+        }
+    }
 
     // Derived State: Asset Recommendations
     val recommendations: StateFlow<List<AssetSuggestionEngine.AssetRecommendation>> = combine(
