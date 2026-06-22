@@ -25,8 +25,9 @@ class MainActivity : ComponentActivity() {
         val repository = ViverRepository(database.dao)
 
         setContent {
+            val systemTheme = androidx.compose.foundation.isSystemInDarkTheme()
             val isDarkThemeState = androidx.compose.runtime.remember { 
-                androidx.compose.runtime.mutableStateOf(androidx.compose.foundation.isSystemInDarkTheme()) 
+                androidx.compose.runtime.mutableStateOf(systemTheme) 
             }
 
             MyApplicationTheme(darkTheme = isDarkThemeState.value) {
